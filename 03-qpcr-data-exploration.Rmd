@@ -1,0 +1,72 @@
+---
+title: "Data visualization and exploration - QPCR data"
+author: "Kaitlyn"
+date: "2019-04-11"
+output: md_document
+editor_options:
+  chunk_output_type: console
+---
+
+Set working directory and load data.
+
+```{r setup, message = F, warning = F}
+library(here)
+library(tidyverse)
+
+# import cleaned data file
+genotypes <- read_csv(here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
+```
+
+## qPCR by storage method
+```{r concentration by storage}
+ggplot(genotypes, aes(x = stor, y = extracted_conc, fill = stor)) +
+  geom_boxplot() +
+  ylab("DNA Concentration") +
+  xlab("Storage Method") +
+  ggtitle("DNA Concentration Across Storage Methods")
+
+ggplot(genotypes, aes(x = stor, y = log(extracted_conc), fill = stor)) +
+  geom_boxplot() +
+  ylab("DNA Concentration (log)") +
+  xlab("Storage Method") +
+  ggtitle("DNA Concentration Across Storage Methods")
+```
+
+## qPCR vs condition, by storage method
+```{r concentration by storage * condition}
+ggplot(genotypes, aes(x = cond, y = log(extracted_conc), col = stor)) +
+  geom_jitter() +
+  facet_wrap(~ stor) +
+  ylab("DNA Concentration (log)") +
+  xlab("Sample Condition") 
+```
+
+Calculate some summary stats
+```{r summary stats}
+qpcr.summary <- genotypes %>%
+  group_by(stor) %>%
+  summarize(mean = mean(extracted_conc, na.rm = TRUE),
+            median = median(extracted_conc, na.rm = TRUE),
+            sd = sd(extracted_conc, na.rm = TRUE),
+            min = min(extracted_conc, na.rm = TRUE),
+            max = max(extracted_conc, na.rm = TRUE)
+            )
+
+qpcr.summary
+```
+
+Quick ANOVA to see if there is a difference in DNA concentration across storage methods (there isn't).
+
+```{r anova comparison}
+fit <- aov(extracted_conc ~ stor, data = genotypes)
+summary(fit)
+```
+
+
+## Relationship between genotyping and qPCR
+
+Here, plotting the number of amplifying genotypes vs. DNA concentration (qPCR). It doesn't look like there is much of a relationship, even though we might expect a positive relationship.
+```{r genotyping vs qpcr}
+ggplot(genotypes, aes(log(extracted_conc), n, col = stor)) +
+  geom_jitter()
+```

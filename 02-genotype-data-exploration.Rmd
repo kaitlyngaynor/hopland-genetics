@@ -1,0 +1,276 @@
+---
+title: "Data visualization and exploration"
+author: "Kaitlyn"
+date: "2019-04-11"
+output: md_document
+editor_options:
+  chunk_output_type: console
+---
+
+Set working directory and load data.
+
+```{r setup, message = F, warning = F}
+library(here)
+library(tidyverse)
+library(scales)
+
+# import cleaned data file
+genotypes <- read_csv(here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
+```
+
+## Storage method comparison
+
+Take a look at the effect of storage method on genotypes.
+
+A histogram showing the number of samples for that amplified at each number of alleles.
+```{r storage and number worked, warning = F, message = F}
+# wrapped
+ggplot(genotypes, aes(x = n, fill = stor)) +
+  geom_histogram() +
+  facet_wrap(~ stor) +
+  ylab("Number of Samples") +
+  xlab("Number of Alleles Amplifying") +
+  ggtitle("Breakdown of Markers Working Across Storage Methods")
+
+# side-by-side
+ggplot(genotypes, aes(x = n, fill = stor)) +
+  geom_histogram(position = "dodge") +
+  ylab("Number of Samples") +
+  xlab("Number of Alleles Amplifying") +
+  ggtitle("Breakdown of Markers Working Across Storage Methods")
+```
+
+Plot whether sample worked against storage method.
+```{r storage method working}
+# summarize
+working.storage <- genotypes %>%
+  group_by(stor) %>%
+  count(working)
+
+# histogram
+ggplot(working.storage, aes(x = working, y = n, fill = stor)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  ggtitle("Samples Yielding Usable Genotypes (> 8/10 markers)") +
+  ylab("Number of Samples")
+
+# another way of viewing it
+ggplot(working.storage, aes(x = stor, y = n, fill = working)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Samples Yielding Usable Genotypes (> 8/10 markers)") +
+  ylab("Number of Samples")
+
+# summarize
+perfect.storage <- genotypes %>%
+  group_by(stor) %>%
+  count(perfect)
+
+# histogram
+ggplot(perfect.storage, aes(x = perfect, y = n, fill = stor)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  ggtitle("Samples Yielding Complete Genotypes (10/10 markers)") +
+  ylab("Number of Samples")
+
+# another way of viewing it
+ggplot(perfect.storage, aes(x = stor, y = n, fill = perfect)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Samples Yielding Complete Genotypes (10/10 markers)") +
+  ylab("Number of Samples")
+```
+
+As per Bryan's 9/17/19 suggestion, a look at how individual samples performed with different storage methods.
+
+First, get data from long format to wide format.
+```{r long to wide}
+## subset only columns consistent across samples (name, condition), then spread
+genotypes.spread <- genotypes %>%
+  subset(select=c(lab_id, cond, stor, n)) %>% 
+  spread(key = stor, value = n)  
+  
+head(genotypes.spread) # confirm it worked, yay!
+```
+
+Now plot. I never did figure out how to get a legend for the geom_dumbbell plot, so just added manually in Illustrator. This link seems promising, though I didn't investigate fully: https://stackoverflow.com/questions/44653597/adding-a-traditional-legend-to-dumbbell-plot-in-ggaltgeom-dumbbell-in-r
+
+So, for now, just know that red = dry, and blue = swab.
+```{r dumbbell plot}
+# need package ggalt for this plot
+library(ggalt)
+
+# get samples in order by their dry values
+genotypes.spread$lab_id <- factor(genotypes.spread$lab_id, levels = genotypes.spread$lab_id[order(genotypes.spread$dry)])
+
+ggplot(genotypes.spread, aes(x = dry, 
+                                  xend = swab, 
+                                  y = lab_id, 
+                                  group = lab_id)) + 
+  
+  geom_dumbbell(color="gray", # color of bar
+                size=.5,
+                size_x=2,
+                size_xend=2,
+                colour_x = "red",
+                colour_xend="blue",
+                show.legend = T) + # color of end point (swab)
+  labs(x=NULL, 
+       y=NULL) +
+  theme(plot.title = element_text(hjust=0.5, face="bold"),
+        plot.background=element_rect(fill="#f7f7f7"),
+        panel.background=element_rect(fill="#f7f7f7"),
+        panel.grid.minor=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.major.x=element_line(),
+        axis.ticks=element_blank(),
+        legend.position="top",
+        panel.border=element_blank()) +
+  xlab("Number of Markers Working") +
+  ggtitle("Dry (red) vs Swab (blue)")
+```
+
+In this case, green = ethanol.
+```{r dumbbell plot 2}
+# get samples in order by their EtOH values
+genotypes.spread$lab_id <- factor(genotypes.spread$lab_id, levels = genotypes.spread$lab_id[order(genotypes.spread$EtOH)])
+
+ggplot(genotypes.spread, aes(x = EtOH, 
+                                  xend = swab, 
+                                  y = lab_id, 
+                                  group = lab_id)) + 
+  
+  geom_dumbbell(color="gray", # color of bar
+                size=.5,
+                size_x=2,
+                size_xend=2,
+                colour_x = "darkgreen",
+                colour_xend="blue",
+                show.legend = T) + # color of end point (swab)
+  labs(x=NULL, 
+       y=NULL) +
+  theme(plot.title = element_text(hjust=0.5, face="bold"),
+        plot.background=element_rect(fill="#f7f7f7"),
+        panel.background=element_rect(fill="#f7f7f7"),
+        panel.grid.minor=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.major.x=element_line(),
+        axis.ticks=element_blank(),
+        legend.position="top",
+        panel.border=element_blank()) +
+  xlab("Number of Markers Working") +
+  ggtitle("Ethanol (green) vs Swab (blue)")
+```
+
+
+## Effect of condition on genotypes
+
+And now a look at the effect of condition.
+```{r condition effect, warning = F, message = F}
+ggplot(genotypes, aes(x = cond, y = n, col = stor)) +
+  geom_jitter() +
+  geom_smooth() +
+  facet_wrap(~ stor)
+
+ggplot(genotypes, aes(x = perfect, y = cond, fill = stor)) +
+  geom_boxplot() +
+#  geom_jitter() +
+  facet_wrap(~ stor) +
+  coord_flip()
+
+# summarize
+working.storage.cond <- genotypes %>%
+  group_by(stor, as.factor(cond)) %>%
+  count(working)
+names(working.storage.cond) <- c("stor", "cond", "working", "n")
+
+# histogram
+ggplot(working.storage.cond, aes(x = cond, y = n, fill = working)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ stor) +
+  ggtitle("Samples Yielding Usable Genotypes (> 8/10 markers) by Condition & Storage") +
+  ylab("Number of Samples") 
+
+# scale to percentage so it's easier to compare across sample types
+ggplot(working.storage.cond, aes(x = cond, y = n, fill = working)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ stor) +
+  ggtitle("Samples Yielding Usable Genotypes (> 8/10 markers) by Condition & Storage") +
+  ylab("Percent of Samples") 
+
+
+# summarize
+perfect.storage.cond <- genotypes %>%
+  group_by(stor, as.factor(cond)) %>%
+  count(perfect)
+names(perfect.storage.cond) <- c("stor", "cond", "perfect", "n")
+
+# histogram
+ggplot(perfect.storage.cond, aes(x = cond, y = n, fill = perfect)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ stor) +
+  ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
+  ylab("Number of Samples") 
+
+# scale to percentage so it's easier to compare across sample types
+ggplot(perfect.storage.cond, aes(x = cond, y = n, fill = perfect)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ stor) +
+  ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
+  ylab("Percent of Samples") 
+```
+
+### Effect of condition - collapsed categories
+
+Try combining 1 and 1.5, 2 and 2.5, etc to better facilitate comparisons across conditions (since sample size is low for each condition at the fine scale). Combining 4 and NA but I'm not sure how legit that is?
+```{r combine condition scores}
+genotypes$cond.coarse <- fct_collapse(as.factor(genotypes$cond), 
+                                           Slimy = c("1", "1.5"),
+                                           Wet = c("2", "2.5"),
+                                           Shiny = c("3", "3.5"),
+                                           Dull = c("4"))
+genotypes$cond.coarse <- fct_explicit_na(genotypes$cond.coarse, na_level = "Dull")
+
+# summarize
+working.storage.cond.coarse <- genotypes %>%
+  group_by(stor, as.factor(cond.coarse)) %>%
+  count(working)
+names(working.storage.cond.coarse) <- c("stor", "cond.coarse", "working", "n")
+
+# histogram
+ggplot(working.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = working)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ stor) +
+  ggtitle("Samples Yielding Usable Genotypes (> 8/10 markers) by Condition & Storage") +
+  ylab("Number of Samples") 
+
+# scale to percentage so it's easier to compare across sample types
+ggplot(working.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = working)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ stor) +
+  ggtitle("Samples Yielding Usable Genotypes (> 8/10 markers) by Condition & Storage") +
+  ylab("Percent of Samples") 
+
+# summarize
+perfect.storage.cond.coarse <- genotypes %>%
+  group_by(stor, cond.coarse) %>%
+  count(perfect)
+names(perfect.storage.cond) <- c("stor", "cond.coarse", "perfect", "n")
+
+# histogram
+ggplot(perfect.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = perfect)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ stor) +
+  ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
+  ylab("Number of Samples") 
+
+# scale to percentage so it's easier to compare across sample types
+ggplot(perfect.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = perfect)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ stor) +
+  ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
+  ylab("Percent of Samples") 
+
+# same thing, but organized differently
+ggplot(perfect.storage.cond.coarse, aes(x = stor, y = n, fill = perfect)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ cond.coarse) +
+  ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
+  ylab("Percent of Samples")
+```

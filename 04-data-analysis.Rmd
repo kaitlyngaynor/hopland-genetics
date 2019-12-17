@@ -16,9 +16,15 @@ library(here)
 
 # import cleaned file
 genotypes <- read_csv(here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
+
+genotypes$cond.coarse <- fct_collapse(as.factor(genotypes$cond), 
+                                           Slimy = c("1", "1.5"),
+                                           Wet = c("2", "2.5"),
+                                           Shiny = c("3", "3.5"),
+                                           Dull = c("4"))
 ```
 
-## Generalized Linear Mixed Models
+## GLMMs for microsat genotyping
 
 We have a tricky modeling situation with the dependent variable—it is effectively a proportion (number of markers working out of 10 markers), and is bounded between 0 and 10 (or 0 and 1, if calculated as a true proportion). Furthermore, it is not normally distributed, but instead 0- and 1-inflated (most of the values are 0 or 1). When Googling, I ran into these ZOIB models (zero-one inflated beta models) which are a little confusing to me but seems promising?? https://journal.r-project.org/archive/2015/RJ-2015-019/RJ-2015-019.pdf They entail Bayesian inference and are a little tricky. I didn't go down this route.
 
@@ -33,27 +39,27 @@ genotypes$working <- as.factor(genotypes$working)
 
 # no variables—just random effect
 fit0 <- glmer(working ~ (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit0) # AIC = 409.2
+summary(fit0) # AIC = 405.7
 
 # effect of condition only
 fit1 <- glmer(working ~ cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit1) # AIC = 389.8
- 
-# effect of condition only (coarse categories) - NEED TO UPDATE THIS
-#fit1.5 <- glmer(working ~ cond.coarse + (1 | lab_id), family = binomial("logit"), data = genotypes)
-#summary(fit1.5) # AIC = 404.2
+summary(fit1) # AIC = 386.5
+
+# effect of condition only (coarse categories) 
+fit1.5 <- glmer(working ~ cond.coarse + (1 | lab_id), family = binomial("logit"), data = genotypes)
+summary(fit1.5) # AIC = 389
 
 # effect of storage only
 fit2 <- glmer(working ~ stor + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit2) # AIC = 382.9
+summary(fit2) # AIC = 378.9
 
-# effect of storage and condition
+# effect of storage and condition - BEST!!!
 fit3 <- glmer(working ~ stor + cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit3) # AIC = 365.1
+summary(fit3) # AIC = 361.3
 
 # effect of storage and condition (interacting)
 fit4 <- glmer(working ~ stor * cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit4) # AIC = 366
+summary(fit4) # AIC = 362.8
 ```
 
 #### Perfect samples (all 10 markers)
@@ -63,29 +69,63 @@ genotypes$perfect <- as.factor(genotypes$perfect)
 
 # no variables—just random effect
 fit0 <- glmer(perfect ~ (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit0) # AIC = 428.5
+summary(fit0) # AIC = 425.7
 
 # effect of condition only
 fit1 <- glmer(perfect ~ cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit1) # AIC = 409.6
+summary(fit1) # AIC = 407.1
 
 # effect of condition only (coarse categories)
-#fit1.5 <- glmer(perfect ~ cond.coarse + (1 | lab_id), family = binomial("logit"), data = genotypes)
-#summary(fit1.5) # AIC = 421.8
+fit1.5 <- glmer(perfect ~ cond.coarse + (1 | lab_id), family = binomial("logit"), data = genotypes)
+summary(fit1.5) # AIC = 410.3
 
 # effect of storage only
 fit2 <- glmer(perfect ~ stor + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit2) # AIC = 404.1
+summary(fit2) # AIC = 400.8
 
 # effect of storage and condition
 fit3 <- glmer(perfect ~ stor + cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit3) # AIC = 385.2
+summary(fit3) # AIC = 382.2
 
 # effect of storage and condition (interacting)
 fit4 <- glmer(perfect ~ stor * cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit4) # AIC = 386.4
+summary(fit4) # AIC = 383.8
 ```
 
 The best models (lowest AIC) for both working genotypes (with at least 8 amplifying markers) and perfect genotypes (all 10 markers working) include both storage and condition (but NOT the interaction between the two), as well as sample ID as a random effect. This suggests that both storage method and sample condition have important (but independent) effects on whether or not a sample works.
 
 I tested two versions of condition score: one numerical (with 0.5 intervals), and one as a factor (coarser, with four categories), and the numerical one was better in both models.
+
+## GLMMs for qPCR
+```{r glmm qpcr}
+# no variables—just random effect
+fit0 <- lmer(extracted_conc ~ (1 | lab_id), data = genotypes)
+summary(fit0)
+AIC(fit0) # 2969.7
+
+# effect of condition only
+fit1 <- lmer(extracted_conc ~ cond + (1 | lab_id), data = genotypes)
+summary(fit1)
+AIC(fit1) # 2841.9
+
+# effect of condition only (coarse categories)
+fit1.5 <- lmer(extracted_conc ~ cond.coarse + (1 | lab_id), data = genotypes)
+summary(fit1.5)
+AIC(fit1.5) # 2826.9
+
+# effect of storage only
+fit2 <- lmer(extracted_conc ~ stor + (1 | lab_id), data = genotypes)
+summary(fit2) 
+AIC(fit2) # 2959.3
+
+# effect of storage and condition
+fit3 <- lmer(extracted_conc ~ stor + cond + (1 | lab_id), data = genotypes)
+summary(fit3)
+AIC(fit3) # 2831.4
+
+# effect of storage and condition (interacting)
+fit4 <- lmer(extracted_conc ~ stor * cond + (1 | lab_id), data = genotypes)
+summary(fit4)
+AIC(fit4) # 2822.3 *** BEST
+```
+

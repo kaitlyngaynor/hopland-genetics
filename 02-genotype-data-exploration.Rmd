@@ -57,15 +57,17 @@ summary(genotypes.spread)
 sd(genotypes.spread$cond, na.rm = T)
 ```
 
-Now count how many are in each storage method.
+Now count how many are in each condition.
 ```{r stor method count}
 genotypes.stor.count <- genotypes.spread %>%
   group_by(cond) %>%
   summarise(count = n())
 
 genotypes.stor.count
+```
 
-# plot a histogram
+#### FIG condition-histogram.pdf
+```{r Supplementary Figure condition-histogram}
 pdf(here::here("figures", "condition-histogram.pdf"))
 ggplot(aes(x = -cond), data = genotypes.spread) + 
   geom_bar() +
@@ -97,6 +99,19 @@ ggplot(genotypes, aes(x = n, fill = stor)) +
   xlab("Number of Alleles Amplifying") +
   ggtitle("Breakdown of Markers Working Across Storage Methods")
 ```
+
+#### FIG storage-number-working.pdf
+```{r FIG storage-number-working}
+pdf(here::here("figures", "storage-number-working.pdf"), width = 4, height = 5)
+ggplot(genotypes, aes(x = n, fill = stor)) +
+  geom_histogram() +
+  facet_grid(stor ~ .) +
+  ylab("Number of Samples") +
+  xlab("Number of Alleles Amplifying")
+dev.off()
+```
+
+
 
 Plot whether sample worked against storage method.
 ```{r storage method working}
@@ -226,6 +241,7 @@ ggplot(genotypes, aes(x = perfect, y = cond, fill = stor)) +
 
 # summarize
 working.storage.cond <- genotypes %>%
+  drop_na(cond) %>%
   group_by(stor, as.factor(cond)) %>%
   count(working)
 names(working.storage.cond) <- c("stor", "cond", "working", "n")
@@ -241,44 +257,56 @@ ggplot(working.storage.cond, aes(x = cond, y = n, fill = working)) +
 ggplot(working.storage.cond, aes(x = cond, y = n, fill = working)) +
   geom_bar(stat = "identity", position = "fill") +
   facet_wrap(~ stor) +
-  ggtitle("Samples Yielding Usable Genotypes (> 8/10 markers) by Condition & Storage") +
-  ylab("Percent of Samples") 
+#  ggtitle("Samples Yielding Usable Genotypes (> 8/10 markers) by Condition & Storage") +
+  ylab("Percent of Samples") +
+  xlab("Sample Condition")
 
 
 # summarize
 perfect.storage.cond <- genotypes %>%
+  drop_na(cond) %>%
   group_by(stor, as.factor(cond)) %>%
   count(perfect)
-names(perfect.storage.cond) <- c("stor", "cond", "perfect", "n")
+names(perfect.storage.cond) <- c("stor", "cond", "Complete", "n")
 
 # histogram
-ggplot(perfect.storage.cond, aes(x = cond, y = n, fill = perfect)) +
+ggplot(perfect.storage.cond, aes(x = cond, y = n, fill = Complete)) +
   geom_bar(stat = "identity") +
   facet_wrap(~ stor) +
   ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
   ylab("Number of Samples") 
 
 # scale to percentage so it's easier to compare across sample types
-ggplot(perfect.storage.cond, aes(x = cond, y = n, fill = perfect)) +
+ggplot(perfect.storage.cond, aes(x = cond, y = n, fill = Complete)) +
   geom_bar(stat = "identity", position = "fill") +
   facet_wrap(~ stor) +
   ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
   ylab("Percent of Samples") 
 ```
 
-### Effect of condition - collapsed categories
+## Effect of condition - collapsed categories
 
-Try combining 1 and 1.5, 2 and 2.5, etc to better facilitate comparisons across conditions (since sample size is low for each condition at the fine scale). Combining 4 and NA but I'm not sure how legit that is?
+Try combining 1 and 1.5, 2 and 2.5, etc to better facilitate comparisons across conditions (since sample size is low for each condition at the fine scale). 
 ```{r combine condition scores}
 genotypes$cond.coarse <- fct_collapse(as.factor(genotypes$cond), 
                                            Slimy = c("1", "1.5"),
                                            Wet = c("2", "2.5"),
                                            Shiny = c("3", "3.5"),
                                            Dull = c("4"))
-genotypes$cond.coarse <- fct_explicit_na(genotypes$cond.coarse, na_level = "Dull")
+
+# try another way where we round UP not down
+#genotypes$cond.coarse <- fct_collapse(as.factor(genotypes$cond), 
+#                                           Slimy = c("1"),
+#                                           Wet = c("2", "1.5"),
+#                                           Shiny = c("3", "2.5"),
+#                                           Dull = c("4", "3.5"))
+
+# initially had combined NA into 4, but this doesn't seem right, so I dropped them
+#genotypes$cond.coarse <- fct_explicit_na(genotypes$cond.coarse, na_level = "Dull")
 
 # summarize
 working.storage.cond.coarse <- genotypes %>%
+  drop_na(cond.coarse) %>%
   group_by(stor, as.factor(cond.coarse)) %>%
   count(working)
 names(working.storage.cond.coarse) <- c("stor", "cond.coarse", "working", "n")
@@ -299,28 +327,44 @@ ggplot(working.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = working))
 
 # summarize
 perfect.storage.cond.coarse <- genotypes %>%
+  drop_na(cond.coarse) %>%
   group_by(stor, cond.coarse) %>%
   count(perfect)
-names(perfect.storage.cond) <- c("stor", "cond.coarse", "perfect", "n")
+names(perfect.storage.cond.coarse) <- c("stor", "cond.coarse", "Complete", "n")
 
 # histogram
-ggplot(perfect.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = perfect)) +
+ggplot(perfect.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = Complete)) +
   geom_bar(stat = "identity") +
   facet_wrap(~ stor) +
   ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
   ylab("Number of Samples") 
 
 # scale to percentage so it's easier to compare across sample types
-ggplot(perfect.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = perfect)) +
+ggplot(perfect.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = Complete)) +
   geom_bar(stat = "identity", position = "fill") +
   facet_wrap(~ stor) +
   ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
   ylab("Percent of Samples") 
 
 # same thing, but organized differently
-ggplot(perfect.storage.cond.coarse, aes(x = stor, y = n, fill = perfect)) +
+ggplot(perfect.storage.cond.coarse, aes(x = stor, y = n, fill = Complete)) +
   geom_bar(stat = "identity", position = "fill") +
   facet_wrap(~ cond.coarse) +
   ggtitle("Samples Yielding Complete Genotypes (10/10 markers) by Condition & Storage") +
   ylab("Percent of Samples")
 ```
+
+#### FIG condition-genotype-complete.pdf
+```{r condition-genotype-complete}
+# scale to percentage so it's easier to compare across sample types
+pdf(here::here("figures", "condition-genotype-complete.pdf"), width = 7, height = 5)
+ggplot(perfect.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = Complete)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ stor) +
+  ylab("Proportion of Samples") +
+  xlab("Sample Condition")
+dev.off()
+
+
+```
+

@@ -18,6 +18,64 @@ library(scales)
 genotypes <- read_csv(here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
 ```
 
+## Some summary statistics
+
+Compare storage, work, and number worked across sample conditions.
+```{r compare storage}
+# number of working samples for each method
+genotypes %>%
+  group_by(stor, working) %>%
+  summarise(working.count = n())
+
+# number of perfect samples for each method
+genotypes %>%
+  group_by(stor, perfect) %>%
+  summarise(perfect.count = n())
+
+# mean and SD of number working
+genotypes %>%
+  group_by(stor) %>%
+  summarise(mean = mean(n),
+            sd = sd(n))
+```
+
+
+In another version, get data from long format to wide format.
+```{r long to wide}
+# subset only columns consistent across samples (name, condition), then spread
+genotypes.spread <- genotypes %>%
+  subset(select=c(lab_id, cond, stor, n)) %>% 
+  spread(key = stor, value = n)  
+  
+head(genotypes.spread) # confirm it worked, yay!
+
+nrow(genotypes.spread) # number of unique samples = 112
+
+# summarize the columns
+summary(genotypes.spread)
+
+sd(genotypes.spread$cond, na.rm = T)
+```
+
+Now count how many are in each storage method.
+```{r stor method count}
+genotypes.stor.count <- genotypes.spread %>%
+  group_by(cond) %>%
+  summarise(count = n())
+
+genotypes.stor.count
+
+# plot a histogram
+pdf(here::here("figures", "condition-histogram.pdf"))
+ggplot(aes(x = -cond), data = genotypes.spread) + 
+  geom_bar() +
+  theme_minimal() +
+  xlab("Sample Condition") +
+  ylab("Count")
+dev.off()
+```
+
+
 ## Storage method comparison
 
 Take a look at the effect of storage method on genotypes.
@@ -46,6 +104,8 @@ Plot whether sample worked against storage method.
 working.storage <- genotypes %>%
   group_by(stor) %>%
   count(working)
+
+working.storage
 
 # histogram
 ggplot(working.storage, aes(x = working, y = n, fill = stor)) +
@@ -79,17 +139,7 @@ ggplot(perfect.storage, aes(x = stor, y = n, fill = perfect)) +
 
 As per Bryan's 9/17/19 suggestion, a look at how individual samples performed with different storage methods.
 
-First, get data from long format to wide format.
-```{r long to wide}
-## subset only columns consistent across samples (name, condition), then spread
-genotypes.spread <- genotypes %>%
-  subset(select=c(lab_id, cond, stor, n)) %>% 
-  spread(key = stor, value = n)  
-  
-head(genotypes.spread) # confirm it worked, yay!
-```
-
-Now plot. I never did figure out how to get a legend for the geom_dumbbell plot, so just added manually in Illustrator. This link seems promising, though I didn't investigate fully: https://stackoverflow.com/questions/44653597/adding-a-traditional-legend-to-dumbbell-plot-in-ggaltgeom-dumbbell-in-r
+I never did figure out how to get a legend for the geom_dumbbell plot, so just added manually in Illustrator. This link seems promising, though I didn't investigate fully: https://stackoverflow.com/questions/44653597/adding-a-traditional-legend-to-dumbbell-plot-in-ggaltgeom-dumbbell-in-r
 
 So, for now, just know that red = dry, and blue = swab.
 ```{r dumbbell plot}

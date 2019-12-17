@@ -30,16 +30,31 @@ ggplot(genotypes, aes(x = stor, y = log(extracted_conc), fill = stor)) +
   ylab("DNA Concentration (log)") +
   xlab("Storage Method") +
   ggtitle("DNA Concentration Across Storage Methods")
+
+ggplot(genotypes, aes(x = extracted_conc)) +
+  geom_histogram() +
+  facet_grid(stor ~ .)
+
+ggplot(genotypes, aes(x = log(extracted_conc))) +
+  geom_histogram() +
+  facet_grid(stor ~ .)
+
+ggplot(genotypes, aes(x = log(extracted_conc))) +
+  geom_density() +
+  facet_grid(stor ~ .)
+
 ```
 
-## qPCR vs condition, by storage method
-```{r concentration by storage * condition}
-ggplot(genotypes, aes(x = cond, y = log(extracted_conc), col = stor)) +
-  geom_jitter() +
-  facet_wrap(~ stor) +
-  ylab("DNA Concentration (log)") +
-  xlab("Sample Condition") 
+#### FIG qpcr-density-storage.pdf
+```{r export density diagram}
+pdf(here::here("figures", "qpcr-density-storage.pdf"), width = 5, height = 3)
+ggplot(genotypes, aes(x = log(extracted_conc), col = stor)) +
+  geom_density() +
+  xlab("Extracted Concentration (log)") +
+  ylab("Density")
+dev.off()
 ```
+
 
 Calculate some summary stats
 ```{r summary stats}
@@ -60,6 +75,10 @@ Quick ANOVA to see if there is a difference in DNA concentration across storage 
 ```{r anova comparison}
 fit <- aov(extracted_conc ~ stor, data = genotypes)
 summary(fit)
+
+# try as two-way anova
+fit <- aov(extracted_conc ~ stor + Error(lab_id/stor), data = genotypes)
+summary(fit)
 ```
 
 
@@ -70,3 +89,58 @@ Here, plotting the number of amplifying genotypes vs. DNA concentration (qPCR). 
 ggplot(genotypes, aes(log(extracted_conc), n, col = stor)) +
   geom_jitter()
 ```
+
+Relationship between concentration and complete/working samples across storage methods
+```{r concentration and complete or working}
+# working
+ggplot(genotypes, aes(x = log(extracted_conc), col = working)) +
+  geom_density() +
+  facet_grid(stor~.) +
+  xlab("Extracted Concentration (log)") +
+  ylab("Density")
+
+# complete
+ggplot(genotypes, aes(x = log(extracted_conc), col = perfect)) +
+  geom_density() +
+  facet_grid(stor~.) +
+  xlab("Extracted Concentration (log)") +
+  ylab("Density")
+```
+
+#### FIG qpcr-density-complete-storage.pdf
+```{r export density diagram}
+pdf(here::here("figures", "qpcr-density-working-storage.pdf"), width = 5, height = 5)
+ggplot(genotypes, aes(x = log(extracted_conc), col = working)) +
+  geom_density() +
+  facet_grid(stor~.) +
+  xlab("Extracted Concentration (log)") +
+  ylab("Density")
+dev.off()
+```
+
+
+## qPCR vs condition, by storage method
+```{r concentration by storage * condition}
+ggplot(genotypes, aes(x = cond, y = log(extracted_conc), col = stor)) +
+  geom_jitter() +
+  facet_wrap(~ stor) +
+  ylab("DNA Concentration (log)") +
+  xlab("Sample Condition") 
+```
+
+Quick ANOVA to see if there is a difference in DNA concentration in samples with usable vs not usable genotypes for each of the three storage methods.
+
+```{r anova comparison}
+genotypes.dry.work <- subset(genotypes, stor == "dry" & working == "yes")
+genotypes.dry.workno <- subset(genotypes, stor == "dry" & working == "no")
+t.test(genotypes.dry.work$extracted_conc, genotypes.dry.workno$extracted_conc)
+
+genotypes.EtOH.work <- subset(genotypes, stor == "EtOH" & working == "yes")
+genotypes.EtOH.workno <- subset(genotypes, stor == "EtOH" & working == "no")
+t.test(genotypes.EtOH.work$extracted_conc, genotypes.EtOH.workno$extracted_conc)
+
+genotypes.swab.work <- subset(genotypes, stor == "swab" & working == "yes")
+genotypes.swab.workno <- subset(genotypes, stor == "swab" & working == "no")
+t.test(genotypes.swab.work$extracted_conc, genotypes.swab.workno$extracted_conc)
+```
+

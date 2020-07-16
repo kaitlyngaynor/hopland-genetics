@@ -17,41 +17,101 @@ library(tidyverse)
 genotypes <- read_csv(here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
 ```
 
+## Explore & remove outliers
+```{r}
+# have a look at values outside of 1.5 * IQR (outliers)
+boxplot.stats(genotypes$extracted_conc)$out
+
+# what is the lowest value? 21.64863
+min(boxplot.stats(genotypes$extracted_conc)$out)
+
+genotypes$extracted_conc_nooutlier <- NA
+
+# change outliers to NA
+for(i in 1:nrow(genotypes)) {
+  if(is.na(genotypes$extracted_conc[i])) {
+    genotypes$extracted_conc_nooutlier[i] <-  NA
+  }
+  else if(genotypes$extracted_conc[i] >= min(boxplot.stats(genotypes$extracted_conc)$out)) {
+    genotypes$extracted_conc_nooutlier[i] <- NA
+  } else {
+    genotypes$extracted_conc_nooutlier[i] <- genotypes$extracted_conc[i]
+  }
+}
+```
+
 ## qPCR by storage method
 ```{r concentration by storage}
+## BOXPLOTS
+
+# as is
 ggplot(genotypes, aes(x = stor, y = extracted_conc, fill = stor)) +
   geom_boxplot() +
   ylab("DNA Concentration") +
   xlab("Storage Method") +
   ggtitle("DNA Concentration Across Storage Methods")
 
+# no outliers
+ggplot(genotypes, aes(x = stor, y = extracted_conc_nooutlier, fill = stor)) +
+  geom_boxplot() +
+  ylab("DNA Concentration") +
+  xlab("Storage Method") +
+  ggtitle("DNA Concentration Across Storage Methods")
+
+# log scale
 ggplot(genotypes, aes(x = stor, y = log(extracted_conc), fill = stor)) +
   geom_boxplot() +
   ylab("DNA Concentration (log)") +
   xlab("Storage Method") +
   ggtitle("DNA Concentration Across Storage Methods")
 
+# histogram
 ggplot(genotypes, aes(x = extracted_conc)) +
   geom_histogram() +
   facet_grid(stor ~ .)
 
+# log scale histogram
 ggplot(genotypes, aes(x = log(extracted_conc))) +
   geom_histogram() +
   facet_grid(stor ~ .)
 
-ggplot(genotypes, aes(x = log(extracted_conc))) +
+# density plot
+ggplot(genotypes, aes(x = extracted_conc, col = stor)) +
   geom_density() +
   facet_grid(stor ~ .)
 
+# log density plot
+ggplot(genotypes, aes(x = log(extracted_conc), col = stor)) +
+  geom_density() +
+  facet_grid(stor ~ .)
+
+# no outlier density plot
+ggplot(genotypes, aes(x = extracted_conc_nooutlier, col = stor)) +
+  geom_density() +
+  facet_grid(stor ~ .)
+
+# log no outlier
+ggplot(genotypes, aes(x = log(extracted_conc_nooutlier), col = stor)) +
+  geom_density() +
+  xlab("DNA concentration (log ng/µL)") +
+  ylab("Density") +
+  theme_classic()
 ```
 
 #### FIG qpcr-density-storage.pdf
 ```{r export density diagram}
+# create labels for storage factor
+genotypes$stor <- factor(genotypes$stor, 
+                         levels = c("dry", "EtOH", "swab"),
+                         labels = c("Dry", "Ethanol", "Swab"))
+
 pdf(here::here("figures", "qpcr-density-storage.pdf"), width = 5, height = 3)
 ggplot(genotypes, aes(x = log(extracted_conc), col = stor)) +
   geom_density() +
-  xlab("Extracted Concentration (log)") +
-  ylab("Density")
+  xlab("DNA concentration (log ng/µL)") +
+  ylab("Density") +
+  theme_classic() +
+  theme(legend.title = element_blank())
 dev.off()
 ```
 
@@ -73,11 +133,11 @@ qpcr.summary
 Quick ANOVA to see if there is a difference in DNA concentration across storage methods (there isn't).
 
 ```{r anova comparison}
-fit <- aov(extracted_conc ~ stor, data = genotypes)
+fit <- aov(log(extracted_conc) ~ stor, data = genotypes)
 summary(fit)
 
-# try as two-way anova
-fit <- aov(extracted_conc ~ stor + Error(lab_id/stor), data = genotypes)
+# try as two-way anova - does not work, model fit is singular
+fit <- aov(log(extracted_conc) ~ stor + Error(lab_id/stor), data = genotypes)
 summary(fit)
 ```
 
@@ -109,12 +169,19 @@ ggplot(genotypes, aes(x = log(extracted_conc), col = perfect)) +
 
 #### FIG qpcr-density-complete-storage.pdf
 ```{r export density diagram}
+# create labels for completeness
+genotypes$working <- factor(genotypes$working, 
+                         levels = c("no", "yes"),
+                         labels = c("Not usable genotype", "Usable genotype"))
+
 pdf(here::here("figures", "qpcr-density-working-storage.pdf"), width = 5, height = 5)
 ggplot(genotypes, aes(x = log(extracted_conc), col = working)) +
   geom_density() +
   facet_grid(stor~.) +
-  xlab("Extracted Concentration (log)") +
-  ylab("Density")
+  xlab("Extracted concentration (log ng/µL)") +
+  ylab("Density") +
+  theme_bw() +
+  theme(legend.title = element_blank())
 dev.off()
 ```
 

@@ -365,15 +365,24 @@ ggplot(perfect.storage.cond.coarse, aes(x = stor, y = n, fill = Complete)) +
   ylab("Percent of Samples")
 ```
 
-#### FIG condition-genotype-complete.pdf
+#### FIG condition-genotype-usable.pdf
 ```{r condition-genotype-complete}
+# create labels for completeness
+working.storage.cond.coarse$working <- factor(working.storage.cond.coarse$working, 
+                         levels = c("no", "yes"),
+                         labels = c("Not usable genotype", "Usable genotype"))
+
 # scale to percentage so it's easier to compare across sample types
-pdf(here::here("figures", "condition-genotype-complete.pdf"), width = 7, height = 5)
-ggplot(perfect.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = Complete)) +
+pdf(here::here("figures", "condition-genotype-usable.pdf"), width = 7, height = 5)
+ggplot(working.storage.cond.coarse, aes(x = cond.coarse, y = n, fill = working)) +
   geom_bar(stat = "identity", position = "fill") +
   facet_wrap(~ stor) +
-  ylab("Proportion of Samples") +
-  xlab("Sample Condition")
+  ylab("Percent of samples") +
+  xlab("Sample condition") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid.major.x = element_blank(), 
+        panel.grid.minor.x = element_blank())
 dev.off()
 
 

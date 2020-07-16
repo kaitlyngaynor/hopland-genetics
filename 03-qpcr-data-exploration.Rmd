@@ -193,6 +193,28 @@ ggplot(genotypes, aes(x = cond, y = log(extracted_conc), col = stor)) +
   facet_wrap(~ stor) +
   ylab("DNA Concentration (log)") +
   xlab("Sample Condition") 
+
+genotypes$cond.coarse <- fct_collapse(as.factor(genotypes$cond), 
+                                           Slimy = c("1", "1.5"),
+                                           Wet = c("2", "2.5"),
+                                           Shiny = c("3", "3.5"),
+                                           Dull = c("4"))
+
+ggplot(genotypes, aes(x = log(extracted_conc), col = working)) +
+  geom_density() +
+  facet_grid(stor~cond.coarse) +
+  xlab("Extracted concentration (log ng/µL)") +
+  ylab("Density") +
+  theme_bw() +
+  theme(legend.title = element_blank())
+
+ggplot(genotypes, aes(x = log(extracted_conc), col = cond.coarse)) +
+  geom_density() +
+  facet_grid(working~.) +
+  xlab("Extracted concentration (log ng/µL)") +
+  ylab("Density") +
+  theme_bw() +
+  theme(legend.title = element_blank())
 ```
 
 Quick ANOVA to see if there is a difference in DNA concentration in samples with usable vs not usable genotypes for each of the three storage methods.

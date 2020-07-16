@@ -94,20 +94,31 @@ ggplot(genotypes, aes(x = n, fill = stor)) +
 
 # side-by-side
 ggplot(genotypes, aes(x = n, fill = stor)) +
-  geom_histogram(position = "dodge") +
-  ylab("Number of Samples") +
-  xlab("Number of Alleles Amplifying") +
-  ggtitle("Breakdown of Markers Working Across Storage Methods")
+  geom_histogram(position = "dodge", bins = 11) +
+  ylab("Number of samples") +
+  xlab("Number of alleles amplifying") +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank()) +
+  scale_x_continuous(breaks = c(0:10))
 ```
 
 #### FIG storage-number-working.pdf
 ```{r FIG storage-number-working}
-pdf(here::here("figures", "storage-number-working.pdf"), width = 4, height = 5)
+# create labels for storage factor
+genotypes$stor <- factor(genotypes$stor, 
+                         levels = c("dry", "EtOH", "swab"),
+                         labels = c("Dry", "Ethanol", "Swab"))
+
+pdf(here::here("figures", "storage-number-working.pdf"), width = 3, height = 5)
 ggplot(genotypes, aes(x = n, fill = stor)) +
-  geom_histogram() +
+  geom_histogram(bins = 11) +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid.minor = element_blank()) +
   facet_grid(stor ~ .) +
-  ylab("Number of Samples") +
-  xlab("Number of Alleles Amplifying")
+  ylab("Number of samples") +
+  xlab("Number of alleles amplifying") +
+  scale_x_continuous(breaks = c(0:10))
 dev.off()
 ```
 

@@ -99,33 +99,33 @@ I tested two versions of condition score: one numerical (with 0.5 intervals), an
 ## GLMMs for qPCR
 ```{r glmm qpcr}
 # no variables—just random effect
-fit0 <- lmer(extracted_conc ~ (1 | lab_id), data = genotypes)
+fit0 <- lmer(log(extracted_conc) ~ (1 | lab_id), data = genotypes)
 summary(fit0)
-AIC(fit0) # 2969.7
+AIC(fit0) # 1200.9
 
 # effect of condition only
-fit1 <- lmer(extracted_conc ~ cond + (1 | lab_id), data = genotypes)
+fit1 <- lmer(log(extracted_conc) ~ cond + (1 | lab_id), data = genotypes)
 summary(fit1)
-AIC(fit1) # 2841.9
+AIC(fit1) # 1125.9
 
 # effect of condition only (coarse categories)
-fit1.5 <- lmer(extracted_conc ~ cond.coarse + (1 | lab_id), data = genotypes)
+fit1.5 <- lmer(log(extracted_conc) ~ cond.coarse + (1 | lab_id), data = genotypes)
 summary(fit1.5)
-AIC(fit1.5) # 2826.9
+AIC(fit1.5) # 1125.2
 
 # effect of storage only
-fit2 <- lmer(extracted_conc ~ stor + (1 | lab_id), data = genotypes)
+fit2 <- lmer(log(extracted_conc) ~ stor + (1 | lab_id), data = genotypes)
 summary(fit2) 
-AIC(fit2) # 2959.3
+AIC(fit2) # 1192.9
 
 # effect of storage and condition
-fit3 <- lmer(extracted_conc ~ stor + cond + (1 | lab_id), data = genotypes)
+fit3 <- lmer(log(extracted_conc) ~ stor + cond + (1 | lab_id), data = genotypes)
 summary(fit3)
-AIC(fit3) # 2831.4
+AIC(fit3) # 1117.3
 
 # effect of storage and condition (interacting)
-fit4 <- lmer(extracted_conc ~ stor * cond + (1 | lab_id), data = genotypes)
+fit4 <- lmer(log(extracted_conc) ~ stor * cond + (1 | lab_id), data = genotypes)
 summary(fit4)
-AIC(fit4) # 2822.3 *** BEST
+AIC(fit4) # 1117.1 *** BEST
 ```
 

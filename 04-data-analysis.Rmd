@@ -97,6 +97,8 @@ The best models (lowest AIC) for both working genotypes (with at least 8 amplify
 I tested two versions of condition score: one numerical (with 0.5 intervals), and one as a factor (coarser, with four categories), and the numerical one was better in both models.
 
 ## GLMMs for qPCR
+
+DO NOT USE - it maybe doesn't make sense to have "working" as the independent variable and DNA concentration as the dependent variable, causality is a bit inappropriate
 ```{r glmm qpcr}
 # no variables—just random effect
 fit0 <- lmer(log(extracted_conc) ~ (1 | lab_id), data = genotypes)

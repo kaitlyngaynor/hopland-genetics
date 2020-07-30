@@ -12,6 +12,7 @@ Set working directory and load data.
 ```{r setup, message = F, warning = F}
 library(here)
 library(tidyverse)
+library(rstatix)
 
 # import cleaned data file
 genotypes <- read_csv(here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
@@ -40,7 +41,7 @@ for(i in 1:nrow(genotypes)) {
 }
 ```
 
-## qPCR by storage method
+## PLOTS - qPCR by storage method
 ```{r concentration by storage}
 ## BOXPLOTS
 
@@ -116,18 +117,34 @@ dev.off()
 ```
 
 
-Calculate some summary stats
+## Calculate some summary stats
 ```{r summary stats}
-qpcr.summary <- genotypes %>%
+(qpcr.summary <- genotypes %>%
   group_by(stor) %>%
   summarize(mean = mean(extracted_conc, na.rm = TRUE),
             median = median(extracted_conc, na.rm = TRUE),
             sd = sd(extracted_conc, na.rm = TRUE),
             min = min(extracted_conc, na.rm = TRUE),
             max = max(extracted_conc, na.rm = TRUE)
+            ))
+
+(qpcr.summary.log <- genotypes %>%
+  group_by(stor) %>%
+  summarize(mean = mean(log(extracted_conc), na.rm = TRUE),
+            median = median(log(extracted_conc), na.rm = TRUE),
+            sd = sd(log(extracted_conc), na.rm = TRUE),
+            min = min(log(extracted_conc), na.rm = TRUE),
+            max = max(log(extracted_conc), na.rm = TRUE))
             )
 
-qpcr.summary
+(qpcr.summary.working <- genotypes %>%
+  group_by(stor, working) %>%
+  summarize(mean = mean(extracted_conc, na.rm = TRUE),
+            median = median(extracted_conc, na.rm = TRUE),
+            sd = sd(extracted_conc, na.rm = TRUE),
+            min = min(extracted_conc, na.rm = TRUE),
+            max = max(extracted_conc, na.rm = TRUE)
+            ))
 ```
 
 Quick ANOVA to see if there is a difference in DNA concentration across storage methods (there isn't).
@@ -136,9 +153,18 @@ Quick ANOVA to see if there is a difference in DNA concentration across storage 
 fit <- aov(log(extracted_conc) ~ stor, data = genotypes)
 summary(fit)
 
-# try as two-way anova - does not work, model fit is singular
-fit <- aov(log(extracted_conc) ~ stor + Error(lab_id/stor), data = genotypes)
-summary(fit)
+# more appropriate - repeated-measures ANOVA
+
+# first clean up
+genotypes_clean <- genotypes %>% 
+  select(lab_id, stor, extracted_conc) %>% 
+  drop_na() %>% 
+  mutate(extracted_conc_log = log(extracted_conc))
+
+anova_test(data = genotypes_clean,
+           dv = extracted_conc_log,
+           wid = lab_id,
+           between = stor)
 ```
 
 
@@ -217,19 +243,19 @@ ggplot(genotypes, aes(x = log(extracted_conc), col = cond.coarse)) +
   theme(legend.title = element_blank())
 ```
 
-Quick ANOVA to see if there is a difference in DNA concentration in samples with usable vs not usable genotypes for each of the three storage methods.
+Quick t-tests to see if there is a difference in DNA concentration in samples with usable vs not usable genotypes for each of the three storage methods.
 
 ```{r anova comparison}
 genotypes.dry.work <- subset(genotypes, stor == "dry" & working == "yes")
 genotypes.dry.workno <- subset(genotypes, stor == "dry" & working == "no")
-t.test(genotypes.dry.work$extracted_conc, genotypes.dry.workno$extracted_conc)
+t.test(log(genotypes.dry.work$extracted_conc), log(genotypes.dry.workno$extracted_conc))
 
 genotypes.EtOH.work <- subset(genotypes, stor == "EtOH" & working == "yes")
 genotypes.EtOH.workno <- subset(genotypes, stor == "EtOH" & working == "no")
-t.test(genotypes.EtOH.work$extracted_conc, genotypes.EtOH.workno$extracted_conc)
+t.test(log(genotypes.EtOH.work$extracted_conc), log(genotypes.EtOH.workno$extracted_conc))
 
 genotypes.swab.work <- subset(genotypes, stor == "swab" & working == "yes")
 genotypes.swab.workno <- subset(genotypes, stor == "swab" & working == "no")
-t.test(genotypes.swab.work$extracted_conc, genotypes.swab.workno$extracted_conc)
+t.test(log(genotypes.swab.work$extracted_conc), log(genotypes.swab.workno$extracted_conc))
 ```
 

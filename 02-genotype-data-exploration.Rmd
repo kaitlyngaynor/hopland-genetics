@@ -116,6 +116,7 @@ ggplot(genotypes, aes(x = n, fill = stor)) +
   theme(legend.position = "none",
         panel.grid.minor = element_blank()) +
   facet_grid(stor ~ .) +
+  scale_fill_manual(values = c("#e41a1c", "#377eb8", "#4daf4a")) +
   ylab("Number of samples") +
   xlab("Number of alleles amplifying") +
   scale_x_continuous(breaks = c(0:10))

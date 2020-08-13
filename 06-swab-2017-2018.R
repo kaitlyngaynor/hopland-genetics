@@ -16,9 +16,11 @@ genotypes <- bind_rows(genotypes_17, genotypes_18) %>%
 
 # add column for whether it is working
 genotypes$working <- "no"
+genotypes$working_01 <- 0
 for(i in 1:nrow(genotypes)) {
   if(genotypes$n[i] >=8) {
     genotypes$working[i] <- "yes"
+    genotypes$working_01[i] <- 1
   }
 }
 
@@ -87,3 +89,14 @@ dev.off()
 working.cond.coarse %>% 
   group_by(cond_coarse) %>% 
   summarise(total = sum(n))
+
+
+# GLM -------------------------------------------------------------------
+
+# categorical
+fit1 <- glm(working_01 ~ cond_coarse, data = genotypes, family = "binomial")
+summary(fit1)
+
+# continuous
+fit2 <- glm(working_01 ~ cond_rank, data = genotypes, family = "binomial")
+summary(fit2)

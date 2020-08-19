@@ -1,5 +1,6 @@
 ### EXPLORE 2017 AND 2018 SWAB SAMPLES FOR MORE INFO
 
+library(tidyverse)
 
 # Import and organize data ------------------------------------------------
 
@@ -79,8 +80,46 @@ genotypes_dates$cond_coarse <- fct_collapse(as.factor(genotypes_dates$cond_rank)
 
 # GLM -------------------------------------------------------------------
 
+# models listed from worst to best
+
+# null - AIC = 2835.7
+null_model <- glm(working_01 ~ 1, data = genotypes_dates, family = "binomial")
+summary(null_model)
+
+# time sat - AIC = 2830.1
 timesat_model <- glm(working_01 ~ time_sat, data = genotypes_dates, family = "binomial")
 summary(timesat_model)
+
+# condition (categorical) - AIC = 2693.3
+cond_model1 <- glm(working_01 ~ cond_coarse, data = genotypes_dates, family = "binomial")
+summary(cond_model1)
+
+# condition (categorical) + time sat - AIC = 2668.8
+timesat_cond_model3 <- glm(working_01 ~ time_sat + cond_coarse, data = genotypes_dates, family = "binomial")
+summary(timesat_cond_model3)
+
+# condition (categorical) * time sat - AIC = 2647.4
+timesat_cond_model1 <- glm(working_01 ~ time_sat * cond_coarse, data = genotypes_dates, family = "binomial")
+summary(timesat_cond_model1)
+
+
+
+# don't use these - with continuous condition (not as good)
+
+## condition (continuous) + time sat - AIC = 2674.4
+#timesat_cond_model4 <- glm(working_01 ~ time_sat + cond_rank, data = genotypes_dates, family = "binomial")
+#summary(timesat_cond_model4)
+#
+## condition (continuous) * time sat - AIC = 2656.7
+#timesat_cond_model2 <- glm(working_01 ~ time_sat * cond_rank, data = genotypes_dates, family = "binomial")
+#summary(timesat_cond_model2)
+#
+## condition (continuous) - AIC = 2709.1
+#cond_model2 <- glm(working_01 ~ cond_rank, data = genotypes_dates, family = "binomial")
+#summary(cond_model2)
+
+
+# Figures -----------------------------------------------------------------
 
 pdf(here::here("figures", "swab-storage-time.pdf"), width = 4, height = 3)
 ggplot(data=genotypes_dates, mapping=aes(x=time_sat,y=working_01)) + 
@@ -93,7 +132,7 @@ dev.off()
 
 # by condition
 ggplot(data=genotypes_dates, mapping=aes(x=time_sat,y=working_01, col = cond_coarse)) + 
-#  geom_point(size = .5, position = position_jitter(.5,0.05)) +
+  geom_point(size = .5, position = position_jitter(.5,0.05)) +
   stat_smooth(method="glm", method.args=list(family=binomial)) +
   theme_classic() +
   xlab("Time in Storage (Days)") +

@@ -90,33 +90,32 @@ summary(null_model)
 timesat_model <- glm(working_01 ~ time_sat, data = genotypes_dates, family = "binomial")
 summary(timesat_model)
 
-# condition (categorical) - AIC = 2693.3
-cond_model1 <- glm(working_01 ~ cond_coarse, data = genotypes_dates, family = "binomial")
-summary(cond_model1)
+# condition (continuous) + time sat - AIC = 2674.4
+timesat_cond_model4 <- glm(working_01 ~ time_sat + cond_rank, data = genotypes_dates, family = "binomial")
+summary(timesat_cond_model4)
 
-# condition (categorical) + time sat - AIC = 2668.8
-timesat_cond_model3 <- glm(working_01 ~ time_sat + cond_coarse, data = genotypes_dates, family = "binomial")
-summary(timesat_cond_model3)
+# condition (continuous) * time sat - AIC = 2656.7 - BEST
+timesat_cond_model2 <- glm(working_01 ~ time_sat * cond_rank, data = genotypes_dates, family = "binomial")
+summary(timesat_cond_model2)
 
-# condition (categorical) * time sat - AIC = 2647.4
-timesat_cond_model1 <- glm(working_01 ~ time_sat * cond_coarse, data = genotypes_dates, family = "binomial")
-summary(timesat_cond_model1)
+# condition (continuous) - AIC = 2709.1
+cond_model2 <- glm(working_01 ~ cond_rank, data = genotypes_dates, family = "binomial")
+summary(cond_model2)
 
 
+# don't use these - with categorical condition (does not align with previous methods)
 
-# don't use these - with continuous condition (not as good)
-
-## condition (continuous) + time sat - AIC = 2674.4
-#timesat_cond_model4 <- glm(working_01 ~ time_sat + cond_rank, data = genotypes_dates, family = "binomial")
-#summary(timesat_cond_model4)
+## condition (categorical) - AIC = 2693.3
+#cond_model1 <- glm(working_01 ~ cond_coarse, data = genotypes_dates, family = "binomial")
+#summary(cond_model1)
 #
-## condition (continuous) * time sat - AIC = 2656.7
-#timesat_cond_model2 <- glm(working_01 ~ time_sat * cond_rank, data = genotypes_dates, family = "binomial")
-#summary(timesat_cond_model2)
+## condition (categorical) + time sat - AIC = 2668.8
+#timesat_cond_model3 <- glm(working_01 ~ time_sat + cond_coarse, data = genotypes_dates, family = "binomial")
+#summary(timesat_cond_model3)
 #
-## condition (continuous) - AIC = 2709.1
-#cond_model2 <- glm(working_01 ~ cond_rank, data = genotypes_dates, family = "binomial")
-#summary(cond_model2)
+## condition (categorical) * time sat - AIC = 2647.4
+#timesat_cond_model1 <- glm(working_01 ~ time_sat * cond_coarse, data = genotypes_dates, family = "binomial")
+#summary(timesat_cond_model1)
 
 
 # Figures -----------------------------------------------------------------

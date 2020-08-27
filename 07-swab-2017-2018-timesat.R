@@ -94,14 +94,13 @@ summary(timesat_model)
 timesat_cond_model4 <- glm(working_01 ~ time_sat + cond_rank, data = genotypes_dates, family = "binomial")
 summary(timesat_cond_model4)
 
-# condition (continuous) * time sat - AIC = 2656.7 - BEST
-timesat_cond_model2 <- glm(working_01 ~ time_sat * cond_rank, data = genotypes_dates, family = "binomial")
-summary(timesat_cond_model2)
-
 # condition (continuous) - AIC = 2709.1
 cond_model2 <- glm(working_01 ~ cond_rank, data = genotypes_dates, family = "binomial")
 summary(cond_model2)
 
+# condition (continuous) * time sat - AIC = 2656.7 - BEST
+timesat_cond_model2 <- glm(working_01 ~ time_sat * cond_rank, data = genotypes_dates, family = "binomial")
+summary(timesat_cond_model2)
 
 # don't use these - with categorical condition (does not align with previous methods)
 
@@ -123,16 +122,25 @@ summary(cond_model2)
 pdf(here::here("figures", "swab-storage-time.pdf"), width = 4, height = 3)
 ggplot(data=genotypes_dates, mapping=aes(x=time_sat,y=working_01)) + 
   geom_point(size = .5, position = position_jitter(.5,0.05)) +
-  stat_smooth(method="glm", method.args=list(family=binomial)) +
+  stat_smooth(method="lm", method.args=list(family=binomial)) +
   theme_classic() +
   xlab("Time in Storage (Days)") +
   ylab("Probability of Success")
 dev.off()
 
+# what is the slope of this line?
+summary(timesat_model) # from above
+dummy_data <- data.frame(time_sat = seq(0, max(genotypes_dates$time_sat, na.rm=T), by = 0.001)) 
+dummy_predictions <- predict(timesat_model, newdata = dummy_data, type = "response")
+summary(dummy_predictions)
+
+# change per day
+(max(dummy_predictions) - min(dummy_predictions))/max(genotypes_dates$time_sat)
+
 # by condition
 ggplot(data=genotypes_dates, mapping=aes(x=time_sat,y=working_01, col = cond_coarse)) + 
   geom_point(size = .5, position = position_jitter(.5,0.05)) +
-  stat_smooth(method="glm", method.args=list(family=binomial)) +
+  stat_smooth(method="lm", method.args=list(family=binomial)) +
   theme_classic() +
   xlab("Time in Storage (Days)") +
   ylab("Probability of Success")

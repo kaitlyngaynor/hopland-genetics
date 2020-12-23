@@ -7,12 +7,16 @@ editor_options:
   chunk_output_type: console
 ---
 
+## Set-up
+
 Set working directory and load data.
 
 ```{r setup, message = F, warning = F}
 library(lme4)
 library(tidyverse)
 library(here)
+library(caret)
+library(ROCR)
 
 # import cleaned file
 genotypes <- read_csv(here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
@@ -22,6 +26,8 @@ genotypes$cond.coarse <- fct_collapse(as.factor(genotypes$cond),
                                            Wet = c("2", "2.5"),
                                            Shiny = c("3", "3.5"),
                                            Dull = c("4"))
+
+genotypes$working <- as.factor(genotypes$working)
 ```
 
 ## GLMMs for microsat genotyping
@@ -32,11 +38,9 @@ We could instead treat the dependent variable as a binary variable (worked vs no
 
 I used sample (lab_id) as a random effect, to control for the fact that we tested the same samples in triplicate across methods. I tested both storage method and condition as fixed effects, in addition to running a null model (with only the random effect).
 
-#### Working samples (>= 8 markers)
+Dependent variable = binary, working samples (>= 8 markers)
 
 ```{r model working}
-genotypes$working <- as.factor(genotypes$working)
-
 # no variables—just random effect
 fit0 <- glmer(working ~ (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit0) # AIC = 405.7
@@ -52,7 +56,7 @@ summary(fit1.25) # AIC = 389.2
 
 # effect of condition only (factor, coarse categories) 
 fit1.5 <- glmer(working ~ cond.coarse + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit1.5) # AIC = 389
+summary(fit1.5) # AIC = 389.0
 
 # effect of storage only
 fit2 <- glmer(working ~ stor + (1 | lab_id), family = binomial("logit"), data = genotypes)
@@ -73,4 +77,208 @@ I tested two versions of condition score: one numerical (with 0.5 intervals), an
 
 
 
+## Goodness of fit tests
 
+### Condition (categorical) + storage
+```{r}
+#########3 Area under Curve (AUC)
+auc.data <- matrix(0, ncol = 1, nrow = 100)
+auc.frame <- data.frame(auc.data)
+
+x <- c(1:100)
+for(i in c(1:100)){
+  Train <- createDataPartition(genotypes$working, p=0.8, list=FALSE) #split the data set, using 80% of the sample for training
+  training <- genotypes[ Train, ] #make training
+  testing <- genotypes[ -Train, ] #make testing
+                     
+  best.model.train <- glmer(working ~ stor + cond + (1 | lab_id), 
+                            family = binomial("logit"), 
+                            data = training)
+# Compute AUC for predicting Class with the full model
+#AUC above .7 is good, above .8 is excellent fit
+  prob <- predict(best.model.train, newdata = testing, type="response", allow.new.levels = TRUE)
+  pred <- prediction(prob, testing$working)
+  perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+
+  auc <- performance(pred, measure = "auc")
+  auc <- auc@y.values[[1]]
+  auc
+  auc.frame$auc.frame[i] <- auc
+}
+ 
+mean(auc.frame$auc.frame) # 0.7699074
+range(auc.frame$auc.frame) # 0.6040698 to 0.9045288
+sd(auc.frame$auc.frame) # 0.06127213
+
+#CONCLUSION: good model
+
+```
+
+### Condition (categorical) * storage
+```{r}
+#########3 Area under Curve (AUC)
+auc.data <- matrix(0, ncol = 1, nrow = 100)
+auc.frame <- data.frame(auc.data)
+
+x <- c(1:100)
+for(i in c(1:100)){
+  Train <- createDataPartition(genotypes$working, p=0.8, list=FALSE) #split the data set, using 80% of the sample for training
+  training <- genotypes[ Train, ] #make training
+  testing <- genotypes[ -Train, ] #make testing
+                     
+  best.model.train <- glmer(working ~ stor * cond + (1 | lab_id), 
+                            family = binomial("logit"), 
+                            data = training)
+# Compute AUC for predicting Class with the full model
+#AUC above .7 is good, above .8 is excellent fit
+  prob <- predict(best.model.train, newdata = testing, type="response", allow.new.levels = TRUE)
+  pred <- prediction(prob, testing$working)
+  perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+
+  auc <- performance(pred, measure = "auc")
+  auc <- auc@y.values[[1]]
+  auc
+  auc.frame$auc.frame[i] <- auc
+}
+ 
+mean(auc.frame$auc.frame) # 0.7623688
+range(auc.frame$auc.frame) # 0.6265496 to 0.8846591
+sd(auc.frame$auc.frame) # 0.05798983
+
+#CONCLUSION: good model
+
+```
+
+### Compare condition measures
+
+##### Factor (continuous)
+```{r}
+set.seed(5)
+
+#########3 Area under Curve (AUC)
+auc.data <- matrix(0, ncol = 1, nrow = 100)
+auc.frame <- data.frame(auc.data)
+
+x <- c(1:100)
+for(i in c(1:100)){
+  Train <- createDataPartition(genotypes$working, p=0.8, list=FALSE) #split the data set, using 80% of the sample for training
+  training <- genotypes[ Train, ] #make training
+  testing <- genotypes[ -Train, ] #make testing
+                     
+  best.model.train <- glmer(working ~ cond + (1 | lab_id), 
+                            family = binomial("logit"), 
+                            data = training)
+# Compute AUC for predicting Class with the full model
+#AUC above .7 is good, above .8 is excellent fit
+  prob <- predict(best.model.train, newdata = testing, type="response", allow.new.levels = TRUE)
+  pred <- prediction(prob, testing$working)
+  perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+
+  auc <- performance(pred, measure = "auc")
+  auc <- auc@y.values[[1]]
+  auc
+  auc.frame$auc.frame[i] <- auc
+}
+ 
+mean(auc.frame$auc.frame) # 0.7142458
+range(auc.frame$auc.frame) # 0.5097403 to 0.8238372
+sd(auc.frame$auc.frame) # 0.06534265
+
+#CONCLUSION: good model
+
+```
+
+##### Factor (coarse)
+```{r}
+set.seed(5)
+
+#########3 Area under Curve (AUC)
+auc.data <- matrix(0, ncol = 1, nrow = 100)
+auc.frame <- data.frame(auc.data)
+
+x <- c(1:100)
+for(i in c(1:100)){
+  Train <- createDataPartition(genotypes$working, p=0.8, list=FALSE) #split the data set, using 80% of the sample for training
+  training <- genotypes[ Train, ] #make training
+  testing <- genotypes[ -Train, ] #make testing
+                     
+  best.model.train <- glmer(working ~ cond.coarse + (1 | lab_id), 
+                            family = binomial("logit"), 
+                            data = training)
+# Compute AUC for predicting Class with the full model
+#AUC above .7 is good, above .8 is excellent fit
+  prob <- predict(best.model.train, newdata = testing, type="response", allow.new.levels = TRUE)
+  pred <- prediction(prob, testing$working)
+  perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+
+  auc <- performance(pred, measure = "auc")
+  auc <- auc@y.values[[1]]
+  auc
+  auc.frame$auc.frame[i] <- auc
+}
+ 
+mean(auc.frame$auc.frame) # 0.6986019
+range(auc.frame$auc.frame) # 0.5151515 to 0.8273256
+sd(auc.frame$auc.frame) # 0.0635215
+
+#CONCLUSION: good model
+
+```
+
+#### Factor (fine)
+```{r}
+set.seed(5)
+
+#########3 Area under Curve (AUC)
+auc.data <- matrix(0, ncol = 1, nrow = 100)
+auc.frame <- data.frame(auc.data)
+
+x <- c(1:100)
+for(i in c(1:100)){
+  Train <- createDataPartition(genotypes$working, p=0.8, list=FALSE) #split the data set, using 80% of the sample for training
+  training <- genotypes[ Train, ] #make training
+  testing <- genotypes[ -Train, ] #make testing
+                     
+  best.model.train <- glmer(working ~ as.factor(cond) + (1 | lab_id), 
+                            family = binomial("logit"), 
+                            data = training)
+# Compute AUC for predicting Class with the full model
+#AUC above .7 is good, above .8 is excellent fit
+  prob <- predict(best.model.train, newdata = testing, type="response", allow.new.levels = TRUE)
+  pred <- prediction(prob, testing$working)
+  perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+
+  auc <- performance(pred, measure = "auc")
+  auc <- auc@y.values[[1]]
+  auc
+  auc.frame$auc.frame[i] <- auc
+}
+ 
+mean(auc.frame$auc.frame) # 0.7082125
+range(auc.frame$auc.frame) # 0.5043290 to 0.8341493
+sd(auc.frame$auc.frame) # 0.06033371
+
+#CONCLUSION: good model
+
+```
+
+Continuous:
+AIC = 386.5
+ROC
+mean = 0.7142458
+range = 0.5097403 to 0.8238372
+sd = 0.06534265
+
+Categorical (coarse):
+AIC = 389.0
+ROC
+mean = 0.6986019
+range = 0.5151515 to 0.8273256
+sd = 0.0635215
+
+Categorical (fine):
+AIC = 389.2
+ROC
+mean = 0.7082125
+range = 0.5043290 to 0.8341493
+sd = 0.06033371

@@ -1,6 +1,8 @@
 ### EXPLORE 2017 AND 2018 SWAB SAMPLES FOR MORE INFO
 
 library(tidyverse)
+library(caret)
+library(ROCR)
 
 # Import and organize data ------------------------------------------------
 
@@ -105,6 +107,41 @@ summary(timesat_cond_model2)
 
 # calculate odds ratios
 exp(coef(timesat_cond_model2))
+
+# CALCULATE AOC/ROC
+set.seed(5)
+
+auc.data <- matrix(0, ncol = 1, nrow = 100)
+auc.frame <- data.frame(auc.data)
+
+x <- c(1:100)
+for(i in c(1:100)){
+  Train <- createDataPartition(genotypes_dates$working, p=0.8, list=FALSE) #split the data set, using 80% of the sample for training
+  training <- genotypes_dates[ Train, ] #make training
+  testing <- genotypes_dates[ -Train, ] #make testing
+  
+  best.model.train <- glm(working_01 ~ time_sat * cond_rank, 
+                            family = binomial("logit"), 
+                            data = training)
+  # Compute AUC for predicting Class with the full model
+  #AUC above .7 is good, above .8 is excellent fit
+  prob <- predict(best.model.train, newdata = testing, type="response", allow.new.levels = TRUE)
+  pred <- prediction(prob, testing$working)
+  perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+  
+  auc <- performance(pred, measure = "auc")
+  auc <- auc@y.values[[1]]
+  auc
+  auc.frame$auc.frame[i] <- auc
+}
+
+mean(auc.frame$auc.frame) # 0.6738035
+range(auc.frame$auc.frame) # 0.6074387 to 0.7416716
+sd(auc.frame$auc.frame) # 0.02846679
+
+#CONCLUSION: good model
+
+
 
 
 # don't use these - with categorical condition (does not align with previous methods)

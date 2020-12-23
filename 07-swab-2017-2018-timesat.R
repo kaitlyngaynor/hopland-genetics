@@ -102,6 +102,11 @@ summary(cond_model2)
 timesat_cond_model2 <- glm(working_01 ~ time_sat * cond_rank, data = genotypes_dates, family = "binomial")
 summary(timesat_cond_model2)
 
+
+# calculate odds ratios
+exp(coef(timesat_cond_model2))
+
+
 # don't use these - with categorical condition (does not align with previous methods)
 
 ## condition (categorical) - AIC = 2693.3
@@ -119,13 +124,13 @@ summary(timesat_cond_model2)
 
 # Figures -----------------------------------------------------------------
 
-pdf(here::here("figures", "swab-storage-time.pdf"), width = 4, height = 3)
+pdf(here::here("figures", "swab-storage-time.pdf"), width = 4, height = 3, useDingbats = F)
 ggplot(data=genotypes_dates, mapping=aes(x=time_sat,y=working_01)) + 
   geom_point(size = .5, position = position_jitter(.5,0.05)) +
-  stat_smooth(method="lm", method.args=list(family=binomial)) +
+  stat_smooth(method="glm", method.args=list(family=binomial)) +
   theme_classic() +
   xlab("Time in Storage (Days)") +
-  ylab("Probability of Success")
+  ylab("Probability of Yielding Successful Genotype")
 dev.off()
 
 # what is the slope of this line?
@@ -140,7 +145,7 @@ summary(dummy_predictions)
 # by condition
 ggplot(data=genotypes_dates, mapping=aes(x=time_sat,y=working_01, col = cond_coarse)) + 
   geom_point(size = .5, position = position_jitter(.5,0.05)) +
-  stat_smooth(method="lm", method.args=list(family=binomial)) +
+  stat_smooth(method="glm", method.args=list(family=binomial)) +
   theme_classic() +
   xlab("Time in Storage (Days)") +
   ylab("Probability of Success")

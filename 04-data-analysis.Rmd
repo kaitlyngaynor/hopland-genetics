@@ -44,8 +44,13 @@ summary(fit0) # AIC = 405.7
 # effect of condition only
 fit1 <- glmer(working ~ cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit1) # AIC = 386.5
+AICc(fit1)
 
-# effect of condition only (coarse categories) 
+# effect of condition only (factor, fine categories)
+fit1.25 <- glmer(working ~ as.factor(cond) + (1 | lab_id), family = binomial("logit"), data = genotypes)
+summary(fit1.25) # AIC = 389.2
+
+# effect of condition only (factor, coarse categories) 
 fit1.5 <- glmer(working ~ cond.coarse + (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit1.5) # AIC = 389
 
@@ -62,72 +67,10 @@ fit4 <- glmer(working ~ stor * cond + (1 | lab_id), family = binomial("logit"), 
 summary(fit4) # AIC = 362.8
 ```
 
-#### Perfect samples (all 10 markers)
-
-```{r model perfect}
-genotypes$perfect <- as.factor(genotypes$perfect)
-
-# no variables—just random effect
-fit0 <- glmer(perfect ~ (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit0) # AIC = 425.7
-
-# effect of condition only
-fit1 <- glmer(perfect ~ cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit1) # AIC = 407.1
-
-# effect of condition only (coarse categories)
-fit1.5 <- glmer(perfect ~ cond.coarse + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit1.5) # AIC = 410.3
-
-# effect of storage only
-fit2 <- glmer(perfect ~ stor + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit2) # AIC = 400.8
-
-# effect of storage and condition
-fit3 <- glmer(perfect ~ stor + cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit3) # AIC = 382.2
-
-# effect of storage and condition (interacting)
-fit4 <- glmer(perfect ~ stor * cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
-summary(fit4) # AIC = 383.8
-```
-
-The best models (lowest AIC) for both working genotypes (with at least 8 amplifying markers) and perfect genotypes (all 10 markers working) include both storage and condition (but NOT the interaction between the two), as well as sample ID as a random effect. This suggests that both storage method and sample condition have important (but independent) effects on whether or not a sample works.
+The best model (lowest AIC) for  working genotypes (with at least 8 amplifying markers) includes both storage and condition (but NOT the interaction between the two), as well as sample ID as a random effect. This suggests that both storage method and sample condition have important (but independent) effects on whether or not a sample works.
 
 I tested two versions of condition score: one numerical (with 0.5 intervals), and one as a factor (coarser, with four categories), and the numerical one was better in both models.
 
-## GLMMs for qPCR
 
-DO NOT USE - it maybe doesn't make sense to have "working" as the independent variable and DNA concentration as the dependent variable, causality is a bit inappropriate
-```{r glmm qpcr}
-# no variables—just random effect
-fit0 <- lmer(log(extracted_conc) ~ (1 | lab_id), data = genotypes)
-summary(fit0)
-AIC(fit0) # 1200.9
 
-# effect of condition only
-fit1 <- lmer(log(extracted_conc) ~ cond + (1 | lab_id), data = genotypes)
-summary(fit1)
-AIC(fit1) # 1125.9
-
-# effect of condition only (coarse categories)
-fit1.5 <- lmer(log(extracted_conc) ~ cond.coarse + (1 | lab_id), data = genotypes)
-summary(fit1.5)
-AIC(fit1.5) # 1125.2
-
-# effect of storage only
-fit2 <- lmer(log(extracted_conc) ~ stor + (1 | lab_id), data = genotypes)
-summary(fit2) 
-AIC(fit2) # 1192.9
-
-# effect of storage and condition
-fit3 <- lmer(log(extracted_conc) ~ stor + cond + (1 | lab_id), data = genotypes)
-summary(fit3)
-AIC(fit3) # 1117.3
-
-# effect of storage and condition (interacting)
-fit4 <- lmer(log(extracted_conc) ~ stor * cond + (1 | lab_id), data = genotypes)
-summary(fit4)
-AIC(fit4) # 1117.1 *** BEST
-```
 

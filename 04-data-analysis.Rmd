@@ -17,6 +17,7 @@ library(tidyverse)
 library(here)
 library(caret)
 library(ROCR)
+library(AICcmodavg)
 
 # import cleaned file
 genotypes <- read_csv(here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
@@ -40,31 +41,37 @@ I used sample (lab_id) as a random effect, to control for the fact that we teste
 # no variables—just random effect
 fit0 <- glmer(working ~ (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit0) # AIC = 405.7
+AICc(fit0) # AICc = 405.8
 
 # effect of condition only
 fit1 <- glmer(working ~ cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit1) # AIC = 386.5
-AICc(fit1)
+AICc(fit1) # AICc = 386.6
 
 # effect of condition only (factor, fine categories)
 fit1.25 <- glmer(working ~ as.factor(cond) + (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit1.25) # AIC = 389.2
+AICc(fit1.25) # AICc = 389.7
 
 # effect of condition only (factor, coarse categories) 
 fit1.5 <- glmer(working ~ cond.coarse + (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit1.5) # AIC = 389.0
+AICc(fit1.5) # AICc = 387.1
 
 # effect of storage only
 fit2 <- glmer(working ~ stor + (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit2) # AIC = 378.9
+AICc(fit2) # AICc = 379.0
 
 # effect of storage and condition - BEST!!!
 fit3 <- glmer(working ~ stor + cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit3) # AIC = 361.3
+AICc(fit3) # AICc = 361.5
 
 # effect of storage and condition (interacting)
 fit4 <- glmer(working ~ stor * cond + (1 | lab_id), family = binomial("logit"), data = genotypes)
 summary(fit4) # AIC = 362.8
+AICc(fit4) # AICc = 363.1
 ```
 
 The best model (lowest AIC) for  working genotypes (with at least 8 amplifying markers) includes both storage and condition (but NOT the interaction between the two), as well as sample ID as a random effect. This suggests that both storage method and sample condition have important (but independent) effects on whether or not a sample works.

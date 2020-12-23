@@ -34,6 +34,15 @@ allelematch_output <- read.csv("data/allelematch_output.csv")
 length(unique(allelematch_output$uniqueIndex)) # 68
 
 
+# determine distribution of individuals
+id_count <- allelematch_output %>% 
+  count(uniqueIndex) %>% 
+  arrange(-n) 
+
+(id_count_count <- id_count %>% 
+  rename(samples = n) %>% 
+  count(samples))
+
 
 # only dry ----------------------------------------------------------------
 

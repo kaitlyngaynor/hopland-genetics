@@ -32,13 +32,9 @@ genotypes$working <- as.factor(genotypes$working)
 
 ## GLMMs for microsat genotyping
 
-We have a tricky modeling situation with the dependent variable—it is effectively a proportion (number of markers working out of 10 markers), and is bounded between 0 and 10 (or 0 and 1, if calculated as a true proportion). Furthermore, it is not normally distributed, but instead 0- and 1-inflated (most of the values are 0 or 1). When Googling, I ran into these ZOIB models (zero-one inflated beta models) which are a little confusing to me but seems promising?? https://journal.r-project.org/archive/2015/RJ-2015-019/RJ-2015-019.pdf They entail Bayesian inference and are a little tricky. I didn't go down this route.
-
-We could instead treat the dependent variable as a binary variable (worked vs not worked, with the "worked" cut-off being 8 or 10), which simplifies our analysis greatly, and also may actually be more meaningful, since we don't actually care about the difference between 4 worked and 5 worked. So this is the route that I took. I'm open to feedback, and of course open to people playing around with the ZOIB models on their own (though am not sure I have the capacity to open that can of worms myself, ha).
+We treat the dependent variable as a binary variable (worked vs not worked, with the "worked" cut-off being 8).
 
 I used sample (lab_id) as a random effect, to control for the fact that we tested the same samples in triplicate across methods. I tested both storage method and condition as fixed effects, in addition to running a null model (with only the random effect).
-
-Dependent variable = binary, working samples (>= 8 markers)
 
 ```{r model working}
 # no variables—just random effect

@@ -112,7 +112,25 @@ ggplot(genotypes, aes(x = log(extracted_conc), col = stor)) +
   xlab("DNA concentration (log ng/µL)") +
   ylab("Density") +
   theme_classic() +
-  theme(legend.title = element_blank())
+  theme(legend.title = element_blank()) 
+
+dev.off()
+
+
+# version with IQR lines - from qpr.summary data frame
+pdf(here::here("figures", "qpcr-density-storage-iqr.pdf"), width = 5, height = 3)
+ggplot(genotypes, aes(x = log(extracted_conc), col = stor)) +
+  geom_density() +
+  xlab("DNA concentration (log ng/µL)") +
+  ylab("Density") +
+  theme_classic() +
+  theme(legend.title = element_blank()) +
+  geom_vline(xintercept = log(0.779), color = "red") +
+  geom_vline(xintercept = log(13.5), color = "red") +
+  geom_vline(xintercept = log(0.505), color = "blue") +
+  geom_vline(xintercept = log(6.37), color = "blue") +
+  geom_vline(xintercept = log(1.29), color = "green") +
+  geom_vline(xintercept = log(8.05), color = "green")
 dev.off()
 ```
 
@@ -125,7 +143,9 @@ dev.off()
             median = median(extracted_conc, na.rm = TRUE),
             sd = sd(extracted_conc, na.rm = TRUE),
             min = min(extracted_conc, na.rm = TRUE),
-            max = max(extracted_conc, na.rm = TRUE)
+            max = max(extracted_conc, na.rm = TRUE),
+            quantile25 = quantile(extracted_conc, 0.25, na.rm = TRUE),
+            quantile75 = quantile(extracted_conc, 0.75, na.rm = TRUE)
             ))
 
 (qpcr.summary.log <- genotypes %>%

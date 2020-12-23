@@ -389,3 +389,36 @@ dev.off()
 
 ```
 
+Updated the figure based on reviewer comments.
+
+#### FIG condition-genotype-usable-reviewer.pdf
+```{r condition-genotype-complete}
+# create labels for completeness
+working.storage.cond.coarse$working <- factor(working.storage.cond.coarse$working, 
+                         levels = c("no", "yes"),
+                         labels = c("Not usable genotype", "Usable genotype"))
+
+# scale to percentage so it's easier to compare across sample types
+pdf(here::here("figures", "condition-genotype-usable-v2.pdf"), width = 9, height = 4)
+ggplot(working.storage.cond.coarse, aes(x = stor, y = n, fill = working)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_grid(~ cond.coarse) +
+  ylab("Proportion of samples yielding usable genotypes") +
+  xlab("Storage method") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid.major.x = element_blank(), 
+        panel.grid.minor.x = element_blank())
+dev.off()
+
+pdf(here::here("figures", "genotype-usable.pdf"), width = 5, height = 4)
+ggplot(working.storage.cond.coarse, aes(x = stor, y = n, fill = working)) +
+  geom_bar(stat = "identity", position = "fill") +
+  ylab("Proportion of samples yielding usable genotypes") +
+  xlab("Storage method") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        panel.grid.major.x = element_blank(), 
+        panel.grid.minor.x = element_blank())
+dev.off()
+```

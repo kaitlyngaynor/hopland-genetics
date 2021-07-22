@@ -43,3 +43,16 @@ for (i in 1:nrow(genotypes_qpcr)) {
 # Export cleaned data -----------------------------------------------------
 
 write_csv(genotypes_qpcr, here::here("data", "cleaned-triplicates-genotypes-qpcr.csv"))
+
+
+
+# Export cleaner version for publication ----------------------------------
+
+genotypes_publication <- genotypes_qpcr %>% 
+  select(lab_id, cond, stor, n, extracted_conc) %>% 
+  rename(qpcr_conc = extracted_conc,
+         alleles_working = n,
+         condition = cond,
+         storage = stor)
+
+write_csv(genotypes_publication, here::here("for-dryad", "odocoileus-fecal-genotype-data.csv"))

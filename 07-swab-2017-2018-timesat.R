@@ -79,6 +79,13 @@ genotypes_dates$cond_coarse <- fct_collapse(as.factor(genotypes_dates$cond_rank)
                                       Shiny = c("3", "3.5"),
                                       Dull = c("4", "4.5", "5"))
 
+# export for publication
+genotypes_dates_export <- genotypes_dates %>% 
+  select(lab_id, working, cond_rank, time_sat) %>% 
+  rename(condition = cond_rank,
+         days_storage = time_sat)
+
+write.csv(genotypes_dates_export, "for-dryad/odocoileus-fecal-genotype-data-20172018swab.csv", row.names = F)
 
 # GLM -------------------------------------------------------------------
 

@@ -50,9 +50,26 @@ write_csv(genotypes_qpcr, here::here("data", "cleaned-triplicates-genotypes-qpcr
 
 genotypes_publication <- genotypes_qpcr %>% 
   select(lab_id, cond, stor, n, extracted_conc) %>% 
-  rename(qpcr_conc = extracted_conc,
-         alleles_working = n,
+  rename(alleles_working = n,
          condition = cond,
          storage = stor)
+
+# remove qpcr outliers
+# change outliers to NA
+genotypes$extracted_conc_nooutlier <- NA
+for(i in 1:nrow(genotypes_publication)) {
+  if(is.na(genotypes_publication$extracted_conc[i])) {
+    genotypes_publication$extracted_conc_nooutlier[i] <-  NA
+  }
+  else if(genotypes_publication$extracted_conc[i] >= min(boxplot.stats(genotypes_publication$extracted_conc)$out)) {
+    genotypes_publication$extracted_conc_nooutlier[i] <- NA
+  } else {
+    genotypes_publication$extracted_conc_nooutlier[i] <- genotypes_publication$extracted_conc[i]
+  }
+}
+
+genotypes_publication <- genotypes_publication %>% 
+  rename(qpcr_conc = extracted_conc_nooutlier) %>% 
+  select(-extracted_conc)
 
 write_csv(genotypes_publication, here::here("for-dryad", "odocoileus-fecal-genotype-data.csv"))

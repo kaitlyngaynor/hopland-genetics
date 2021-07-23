@@ -61,4 +61,13 @@ genotypes_publication <- genotypes_qpcr %>%
          Shiny = c("3", "3.5"),
          Dull = c("4")))
 
+# merge in unique individuals
+allelematch_output <- read.csv("data/allelematch_output.csv") %>% 
+  rename(lab_id = matchIndex,
+         individual_id = uniqueIndex) %>% 
+  select(lab_id, individual_id)
+
+genotypes_publication <- left_join(genotypes_publication, allelematch_output)
+
+
 write_csv(genotypes_publication, here::here("for-dryad", "odocoileus-fecal-genotype-data.csv"))

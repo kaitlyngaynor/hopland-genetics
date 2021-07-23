@@ -49,10 +49,16 @@ write_csv(genotypes_qpcr, here::here("data", "cleaned-triplicates-genotypes-qpcr
 # Export cleaner version for publication ----------------------------------
 
 genotypes_publication <- genotypes_qpcr %>% 
-  select(lab_id, cond, stor, n, extracted_conc) %>% 
+  select(lab_id, cond, stor, n, working, extracted_conc) %>% 
   rename(qpcr_conc = extracted_conc,
-         alleles_working = n,
+         alleles_amplified = n,
          condition = cond,
-         storage = stor)
+         storage = stor) %>% 
+  # create coarser condition column
+  mutate(condition_coarse = fct_collapse(as.factor(condition),
+         Slimy = c("1", "1.5"),
+         Wet = c("2", "2.5"),
+         Shiny = c("3", "3.5"),
+         Dull = c("4")))
 
 write_csv(genotypes_publication, here::here("for-dryad", "odocoileus-fecal-genotype-data.csv"))

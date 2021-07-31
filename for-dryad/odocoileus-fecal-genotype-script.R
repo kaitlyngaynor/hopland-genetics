@@ -9,7 +9,7 @@ library(AICcmodavg)
 
 # Sample summary ---------------------------------------------------------
 
-odo_data <- read.csv("for-dryad/odocoileus-fecal-genotype-data.csv")
+odo_data <- read.csv("odocoileus-fecal-genotype-data.csv")
 odo_data$working <- as.factor(odo_data$working)
 head(odo_data)
 
@@ -121,7 +121,7 @@ t.test(log(odo_data_swab_work$qpcr_conc), log(odo_data_swab_workno$qpcr_conc))
 
 # Modeling with 2017-2018 swab samples ------------------------------------
 
-odo_data_1718swab <- read.csv("for-dryad/odocoileus-fecal-genotype-data-20172018swab.csv")
+odo_data_1718swab <- read.csv("odocoileus-fecal-genotype-data-20172018swab.csv")
 odo_data_1718swab$working <- as.factor(odo_data_1718swab$working)
 
 # null - AIC = 2835.7
